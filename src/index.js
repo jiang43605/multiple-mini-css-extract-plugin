@@ -1,5 +1,5 @@
-import webpack from 'webpack';
-import sources from 'webpack-sources';
+const webpack = require('webpack');
+const sources = require('webpack-sources');
 
 const { ConcatSource, SourceMapSource, OriginalSource } = sources;
 const {
@@ -19,7 +19,8 @@ class CssDependency extends webpack.Dependency {
   constructor(
     { identifier, content, media, sourceMap },
     context,
-    identifierIndex
+    identifierIndex,
+    identFileName
   ) {
     super();
     this.identifier = identifier;
@@ -28,10 +29,13 @@ class CssDependency extends webpack.Dependency {
     this.media = media;
     this.sourceMap = sourceMap;
     this.context = context;
+    this._identFileName = identFileName;
   }
 
   getResourceIdentifier() {
-    return `css-module-${this.identifier}-${this.identifierIndex}`;
+    return `css-module-${this.identifier}-${this.identifierIndex}-${
+      this._identFileName
+    }`;
   }
 }
 
@@ -48,6 +52,7 @@ class CssModule extends webpack.Module {
     this.content = dependency.content;
     this.media = dependency.media;
     this.sourceMap = dependency.sourceMap;
+    this._identFileName = dependency._identFileName; // eslint-disable-line
   }
 
   // no source() so webpack doesn't do add stuff to the bundle
@@ -57,7 +62,9 @@ class CssModule extends webpack.Module {
   }
 
   identifier() {
-    return `css ${this._identifier} ${this._identifierIndex}`;
+    return `css ${this._identifier} ${this._identifierIndex} ${
+      this._identFileName
+    }`;
   }
 
   readableIdentifier(requestShortener) {
@@ -92,6 +99,7 @@ class CssModule extends webpack.Module {
   updateHash(hash) {
     super.updateHash(hash);
     hash.update(this.content);
+    hash.update(this._identFileName);
     hash.update(this.media || '');
     hash.update(this.sourceMap ? JSON.stringify(this.sourceMap) : '');
   }
@@ -139,7 +147,8 @@ class MiniCssExtractPlugin {
       compilation.hooks.normalModuleLoader.tap(pluginName, (lc, m) => {
         const loaderContext = lc;
         const module = m;
-        loaderContext[MODULE_TYPE] = (content) => {
+        loaderContext[`${MODULE_TYPE}_options`] = this.options;
+        loaderContext[MODULE_TYPE] = (content, filename) => {
           if (!Array.isArray(content) && content != null) {
             throw new Error(
               `Exported value was not extracted as an array: ${JSON.stringify(
@@ -151,7 +160,9 @@ class MiniCssExtractPlugin {
           const identifierCountMap = new Map();
           for (const line of content) {
             const count = identifierCountMap.get(line.identifier) || 0;
-            module.addDependency(new CssDependency(line, m.context, count));
+            module.addDependency(
+              new CssDependency(line, m.context, count, filename)
+            );
             identifierCountMap.set(line.identifier, count + 1);
           }
         };
@@ -171,22 +182,35 @@ class MiniCssExtractPlugin {
             (module) => module.type === MODULE_TYPE
           );
           if (renderedModules.length > 0) {
-            result.push({
-              render: () =>
-                this.renderContentAsset(
-                  compilation,
-                  chunk,
-                  renderedModules,
-                  compilation.runtimeTemplate.requestShortener
-                ),
-              filenameTemplate: this.options.filename,
-              pathOptions: {
-                chunk,
-                contentHashType: MODULE_TYPE,
-              },
-              identifier: `${pluginName}.${chunk.id}`,
-              hash: chunk.contentHash[MODULE_TYPE],
+            const typeModules = new Map();
+            renderedModules.forEach((module) => {
+              if (typeModules.has(module._identFileName)) { // eslint-disable-line
+                const modules = typeModules.get(module._identFileName); // eslint-disable-line
+                modules.add(module);
+              } else {
+                const moduleSet = new Set([module]);
+                typeModules.set(module._identFileName, moduleSet); // eslint-disable-line
+              }
             });
+
+            for (const [name, sets] of typeModules) {
+              result.push({
+                render: () =>
+                  this.renderContentAsset(
+                    compilation,
+                    chunk,
+                    Array.from(sets),
+                    compilation.runtimeTemplate.requestShortener
+                  ),
+                filenameTemplate: name,
+                pathOptions: {
+                  chunk,
+                  contentHashType: MODULE_TYPE,
+                },
+                identifier: `${pluginName}.${chunk.id}.${name}`,
+                hash: chunk.contentHash[MODULE_TYPE],
+              });
+            }
           }
         }
       );
@@ -197,22 +221,35 @@ class MiniCssExtractPlugin {
             (module) => module.type === MODULE_TYPE
           );
           if (renderedModules.length > 0) {
-            result.push({
-              render: () =>
-                this.renderContentAsset(
-                  compilation,
-                  chunk,
-                  renderedModules,
-                  compilation.runtimeTemplate.requestShortener
-                ),
-              filenameTemplate: this.options.chunkFilename,
-              pathOptions: {
-                chunk,
-                contentHashType: MODULE_TYPE,
-              },
-              identifier: `${pluginName}.${chunk.id}`,
-              hash: chunk.contentHash[MODULE_TYPE],
+            const typeModules = new Map();
+            renderedModules.forEach((module) => {
+              if (typeModules.has(module._identFileName)) { // eslint-disable-line
+                const modules = typeModules.get(module._identFileName); // eslint-disable-line
+                modules.add(module);
+              } else {
+                const moduleSet = new Set([module]);
+                typeModules.set(module._identFileName, moduleSet); // eslint-disable-line
+              }
             });
+
+            for (const [name, sets] of typeModules) {
+              result.push({
+                render: () =>
+                  this.renderContentAsset(
+                    compilation,
+                    chunk,
+                    Array.from(sets),
+                    compilation.runtimeTemplate.requestShortener
+                  ),
+                filenameTemplate: name,
+                pathOptions: {
+                  chunk,
+                  contentHashType: MODULE_TYPE,
+                },
+                identifier: `${pluginName}.${chunk.id}.${name}`,
+                hash: chunk.contentHash[MODULE_TYPE],
+              });
+            }
           }
         }
       );
@@ -533,4 +570,4 @@ class MiniCssExtractPlugin {
 
 MiniCssExtractPlugin.loader = require.resolve('./loader');
 
-export default MiniCssExtractPlugin;
+module.exports = MiniCssExtractPlugin;
