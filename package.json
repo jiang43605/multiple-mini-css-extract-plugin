@@ -5,8 +5,8 @@
   "license": "MIT",
   "repository": "webpack-contrib/mini-css-extract-plugin",
   "author": "Tobias Koppers @sokra",
-  "homepage": "https://github.com/webpack-contrib/mini-css-extract-plugin",
-  "bugs": "https://github.com/webpack-contrib/mini-css-extract-plugin/issues",
+  "homepage": "https://github.com/jiang43605/multiple-mini-css-extract-plugin",
+  "bugs": "https://github.com/jiang43605/multiple-mini-css-extract-plugin/issues",
   "bin": "",
   "main": "dist/cjs.js",
   "engines": {
