@@ -15,6 +15,8 @@ less-loader
 
 ## use
 
+> npm i multiple-mini-css-extract-plugin
+
 ```js
  {
     ...
