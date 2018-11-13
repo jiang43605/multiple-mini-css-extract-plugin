@@ -1,9 +1,9 @@
 {
-  "name": "mini-css-extract-plugin",
+  "name": "multiple-mini-css-extract-plugin",
   "version": "0.4.4",
-  "description": "extracts CSS into separate files",
+  "description": "extracts CSS into multiple separate files",
   "license": "MIT",
-  "repository": "webpack-contrib/mini-css-extract-plugin",
+  "repository": "jiang43605/multiple-mini-css-extract-plugin",
   "author": "Tobias Koppers @sokra",
   "homepage": "https://github.com/jiang43605/multiple-mini-css-extract-plugin",
   "bugs": "https://github.com/jiang43605/multiple-mini-css-extract-plugin/issues",
