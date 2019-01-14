@@ -31,18 +31,18 @@ less-loader
                             less: [
                                 {
                                     filename: 'pccss/[name].[contenthash].css',
+                                    publicPath: publicPath || '/'
                                     globalVars: {},
                                     modifyVars: {
                                         '@primary-color': 'red',
-                                        publicPath: publicPath || '/'
                                     }
                                 },
                                 {
                                     filename: 'phonecss/[name].[contenthash].css',
+                                    publicPath: publicPath || '/'
                                     globalVars: {},
                                     modifyVars: {
                                         '@primary-color': 'green',
-                                        publicPath: publicPath || '/'
                                     }
                                 }
                             ],
